@@ -1,10 +1,11 @@
 
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { EntityNode, Relationship, EntityType, MapData, RelationshipType } from './types';
 import { EntityCard } from './components/EntityCard';
 import { RelationshipEdge } from './components/RelationshipEdge';
 import { EntityEditor } from './components/EntityEditor';
 import { AIGenerator } from './components/AIGenerator';
+import { LandingPage } from './components/LandingPage';
 
 const INITIAL_DATA: MapData = {
   nodes: [
@@ -43,16 +44,24 @@ export interface GroupedEdge {
 }
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [data, setData] = useState<MapData>(INITIAL_DATA);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [draggingNode, setDraggingNode] = useState<EntityNode | null>(null);
   const [isConnecting, setIsConnecting] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
-  
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   
   const dragOffset = useRef({ x: 0, y: 0 });
   const lastMousePos = useRef({ x: 0, y: 0 });
+
+  // Simulate UUID check from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('uuid') || params.has('id')) {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const groupedEdges = useMemo(() => {
     const groups: Record<string, GroupedEdge> = {};
@@ -87,6 +96,7 @@ const App: React.FC = () => {
   }, [transform]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isAuthenticated) return;
     if (draggingNode) {
       const localX = (e.clientX - transform.x) / transform.scale - dragOffset.current.x;
       const localY = (e.clientY - transform.y) / transform.scale - dragOffset.current.y;
@@ -100,7 +110,11 @@ const App: React.FC = () => {
       setTransform(prev => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
       lastMousePos.current = { x: e.clientX, y: e.clientY };
     }
-  }, [draggingNode, isPanning, transform]);
+  }, [draggingNode, isPanning, transform, isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return <LandingPage onEnterSimulation={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div 
@@ -143,6 +157,11 @@ const App: React.FC = () => {
           setData(prev => ({ ...prev, nodes: [...prev.nodes, newNode] }));
           setSelectedNodeId(newNode.id);
         }} className="bg-slate-900 text-white px-6 py-4 rounded-[1.5rem] shadow-2xl hover:bg-indigo-600 transition-all flex items-center gap-3 active:scale-95 group"><div className="bg-white/20 p-1.5 rounded-lg"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg></div><span className="text-xs font-black uppercase tracking-widest">Create Entity</span></button>
+        
+        {/* Helper for the user to go back to home screen for demo */}
+        <button onClick={() => setIsAuthenticated(false)} className="bg-white text-slate-400 px-4 py-2 rounded-2xl shadow-lg hover:text-slate-900 transition-all text-[9px] font-black uppercase tracking-widest border border-slate-100">
+          Sign Out
+        </button>
       </div>
 
       {selectedNodeId && data.nodes.find(n => n.id === selectedNodeId) && (
