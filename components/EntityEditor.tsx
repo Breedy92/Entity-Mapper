@@ -9,7 +9,7 @@ interface EntityEditorProps {
   onStartConnect: () => void;
   onChange: (updated: EntityNode) => void;
   onDelete: (id: string) => void;
-  onUpdateEdge: (edgeId: string, type: RelationshipType) => void;
+  onUpdateEdge: (edgeId: string, type: RelationshipType, metadata?: any) => void;
   onDeleteEdge: (edgeId: string) => void;
   onAddRole: (sourceId: string, targetId: string) => void;
 }
@@ -25,7 +25,6 @@ export const EntityEditor: React.FC<EntityEditorProps> = ({
   onDeleteEdge,
   onAddRole
 }) => {
-  // Group relationships by the "other" entity so we can show "Multi-Role" management
   const nodeEdges = edges.filter(e => e.sourceId === node.id || e.targetId === node.id);
   
   const groupedByTarget: Record<string, Relationship[]> = {};
@@ -44,7 +43,6 @@ export const EntityEditor: React.FC<EntityEditorProps> = ({
         </div>
         <button 
           onClick={() => onDelete(node.id)}
-          title="Delete Entity"
           className="text-slate-300 hover:text-red-500 p-2.5 hover:bg-red-50 rounded-xl transition-all"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -52,7 +50,6 @@ export const EntityEditor: React.FC<EntityEditorProps> = ({
       </div>
 
       <div className="space-y-8 flex-1">
-        {/* Name */}
         <div>
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">Legal Name</label>
           <input
@@ -63,7 +60,6 @@ export const EntityEditor: React.FC<EntityEditorProps> = ({
           />
         </div>
 
-        {/* Type */}
         <div>
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">Entity Type</label>
           <div className="grid grid-cols-2 gap-2">
@@ -79,7 +75,6 @@ export const EntityEditor: React.FC<EntityEditorProps> = ({
           </div>
         </div>
 
-        {/* Description */}
         <div>
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">Description & Notes</label>
           <div className="bg-slate-50 rounded-2xl p-4 border-2 border-transparent focus-within:border-indigo-500 focus-within:bg-white transition-all shadow-sm">
@@ -87,18 +82,17 @@ export const EntityEditor: React.FC<EntityEditorProps> = ({
               value={node.description}
               onChange={(e) => onChange({ ...node, description: e.target.value })}
               className="w-full h-32 bg-transparent outline-none resize-none text-[11px] text-slate-600 leading-relaxed font-medium"
-              placeholder="Enter registration details, ACN/ABN, or beneficiary notes..."
+              placeholder="Registration details..."
             />
           </div>
         </div>
 
-        {/* Relationships */}
         <div className="pt-4 border-t border-slate-100">
           <div className="flex justify-between items-center mb-5">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Relationships</label>
             <button 
               onClick={onStartConnect}
-              className="bg-indigo-600 text-white px-3.5 py-2 rounded-xl text-[10px] font-bold hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100 active:scale-95"
+              className="bg-indigo-600 text-white px-3.5 py-2 rounded-xl text-[10px] font-bold hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
               Connect
@@ -109,49 +103,44 @@ export const EntityEditor: React.FC<EntityEditorProps> = ({
             {Object.entries(groupedByTarget).map(([otherId, rels]) => {
               const otherNode = allNodes.find(n => n.id === otherId);
               return (
-                <div key={otherId} className="bg-slate-50 rounded-2xl p-4 border border-slate-100 shadow-sm hover:border-indigo-100 transition-colors group">
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter opacity-70">Connected with</p>
-                      <p className="text-xs font-black text-slate-700 truncate">{otherNode?.name || 'Unknown Entity'}</p>
-                    </div>
-                    <button 
-                      onClick={() => onAddRole(node.id, otherId)}
-                      className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-600 hover:text-white transition-all uppercase tracking-tighter"
-                    >
-                      + Add Role
-                    </button>
-                  </div>
-                  <div className="space-y-2">
+                <div key={otherId} className="bg-slate-50 rounded-2xl p-4 border border-slate-100 shadow-sm">
+                  <p className="text-xs font-black text-slate-700 mb-3 truncate">{otherNode?.name || 'Unknown'}</p>
+                  <div className="space-y-3">
                     {rels.map(rel => (
-                      <div key={rel.id} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-                        <select
-                          value={rel.type}
-                          onChange={(e) => onUpdateEdge(rel.id, e.target.value as RelationshipType)}
-                          className="flex-1 bg-transparent text-[10px] font-black uppercase text-indigo-600 outline-none cursor-pointer"
-                        >
-                          {Object.values(RelationshipType).map(rt => (
-                            <option key={rt} value={rt}>{rt}</option>
-                          ))}
-                        </select>
-                        <button 
-                          onClick={() => onDeleteEdge(rel.id)}
-                          className="text-slate-200 hover:text-red-500 p-1 transition-colors"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
+                      <div key={rel.id} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={rel.type}
+                            onChange={(e) => onUpdateEdge(rel.id, e.target.value as RelationshipType, rel.metadata)}
+                            className="flex-1 bg-transparent text-[10px] font-black uppercase text-indigo-600 outline-none"
+                          >
+                            {Object.values(RelationshipType).map(rt => (
+                              <option key={rt} value={rt}>{rt}</option>
+                            ))}
+                          </select>
+                          <button onClick={() => onDeleteEdge(rel.id)} className="text-slate-200 hover:text-red-500 transition-colors">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                        
+                        {(rel.type === RelationshipType.SHAREHOLDER) && (
+                          <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Qty</span>
+                            <input
+                              type="text"
+                              value={rel.metadata?.shares || ''}
+                              onChange={(e) => onUpdateEdge(rel.id, rel.type, { ...rel.metadata, shares: e.target.value })}
+                              placeholder="e.g. 100"
+                              className="flex-1 bg-slate-50 text-[10px] font-bold text-slate-600 outline-none px-2 py-1 rounded"
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               );
             })}
-            
-            {Object.keys(groupedByTarget).length === 0 && (
-              <div className="text-center py-8 px-4 border-2 border-dashed border-slate-100 rounded-3xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active connections</p>
-              </div>
-            )}
           </div>
         </div>
       </div>

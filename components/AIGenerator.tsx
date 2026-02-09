@@ -4,17 +4,18 @@ import { generateStructureFromPrompt } from '../services/geminiService';
 import { MapData } from '../types';
 
 interface AIGeneratorProps {
+  currentData: MapData;
   onGenerated: (data: MapData) => void;
 }
 
-export const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated }) => {
+export const AIGenerator: React.FC<AIGeneratorProps> = ({ currentData, onGenerated }) => {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
-    const data = await generateStructureFromPrompt(prompt);
+    const data = await generateStructureFromPrompt(prompt, currentData);
     if (data) onGenerated(data);
     setLoading(false);
     setPrompt('');
@@ -29,7 +30,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated }) => {
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe the structure (e.g. 'Add a family trust for the Smiths')"
+            placeholder="Describe changes (e.g. 'Add Jonny as a beneficiary of the trust')"
             className="flex-1 bg-transparent outline-none text-sm placeholder:text-slate-400 font-bold text-slate-800 tracking-tight"
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
           />
@@ -39,7 +40,7 @@ export const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated }) => {
           disabled={loading}
           className={`px-8 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${loading ? 'bg-slate-100 text-slate-400' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'}`}
         >
-          {loading ? 'Synthesizing...' : 'Generate structure'}
+          {loading ? 'Processing...' : 'Update Structure'}
         </button>
       </div>
     </div>
