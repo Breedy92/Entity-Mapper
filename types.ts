@@ -45,3 +45,11 @@ export interface MapData {
   nodes: EntityNode[];
   edges: Relationship[];
 }
+
+export interface Strategy {
+  id: string;
+  name: string;
+  description: string;
+  data: MapData;
+  createdAt: number;
+}
